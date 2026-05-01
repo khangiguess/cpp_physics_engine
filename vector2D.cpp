@@ -36,8 +36,9 @@ float vec2D::magnitude() const {
 vec2D vec2D::normalize() const{
     float xVal= this -> x, yVal= this -> y, length = magnitude();
 
-    if(length == 0.0f)
-
+    if(length == 0.0f) {
+        return vec2D(0, 0);
+    }
     xVal /= length;
     yVal /= length;
     return vec2D(xVal,yVal);
