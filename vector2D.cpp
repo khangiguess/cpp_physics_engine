@@ -25,6 +25,13 @@ vec2D vec2D::operator-(const vec2D& a)const{
     return vec2D(sumX, sumY);
 }
 
+vec2D vec2D::operator*(float scalar) const{
+    float prodX, prodY;
+    prodX = scalar * (this -> x);
+    prodY = scalar * (this -> y);
+    return vec2D(prodX, prodY);
+}
+
 float vec2D::magnitude() const {
     float   sum = 0, 
             xSquared = (this->x)*(this->x), 
