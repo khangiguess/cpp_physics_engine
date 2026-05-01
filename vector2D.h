@@ -1,26 +1,18 @@
-#include <iostream>
-#include <string>
+#pragma once 
 #include <math.h>
-using namespace std;
 
 class vec2D{
     public:
     float x,y;
     
     vec2D();
-    vec2D (float x=0, float y=0);
-    vec2D (float x, float y){
-        this -> x = x;
-        this -> y = y;
-    }
+    vec2D (float x, float y);
 
-    void operator+(){}
-    void operator-(){}
-    void operator*(){}
+    vec2D operator+(const vec2D& a)const;
+    vec2D operator-(const vec2D& a)const;
 
 
     float magnitude() const;
     vec2D normalize() const;
-    float dot(const vec2D a) const;
-    float cross(const vec2D a) const;
+    float dot(const vec2D& a) const;
 };
