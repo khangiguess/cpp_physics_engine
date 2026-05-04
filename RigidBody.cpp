@@ -10,12 +10,12 @@ RigidBody::RigidBody(float mass, vec2D startPos) {
 }
 
 void RigidBody::update(float dt) {
-    this->velocity = this->velocity + (this->acceleration) * dt;
-    this->position = this->position + (this->velocity) * dt;
+    this->velocity += (this->acceleration) * dt;
+    this->position += (this->velocity) * dt;
 }
 
 void RigidBody::applyForce(vec2D force) {
-    this->acceleration = this->acceleration + force * (1.0f / (this->mass));
+    this->acceleration += force * (1.0f / (this->mass));
 }
 
 void RigidBody::clearForces() {
