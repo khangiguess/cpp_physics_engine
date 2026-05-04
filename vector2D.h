@@ -10,7 +10,7 @@ class vec2D{
 
     vec2D operator+(const vec2D& a)const;
     vec2D operator-(const vec2D& a)const;
-
+    vec2D operator*(float scalar) const;
 
     float magnitude() const;
     vec2D normalize() const;
