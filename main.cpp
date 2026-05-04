@@ -1,3 +1,5 @@
+/// @file main.cpp
+/// @brief Entry point for testing the physics engine.
 #include "vector2D.h"
 #include <iostream>
 

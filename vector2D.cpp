@@ -1,3 +1,5 @@
+/// @file vector2D.cpp
+/// @brief Implementation of the vec2D class.
 #include <math.h>
 #include "vector2D.h"
 

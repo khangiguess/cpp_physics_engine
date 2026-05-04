@@ -1,3 +1,5 @@
+/// @file RigidBody.cpp
+/// @brief Implementation of the RigidBody class.
 #include "RigidBody.h"
 
 RigidBody::RigidBody(float mass, vec2D startPos) {
