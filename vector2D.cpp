@@ -1,34 +1,34 @@
 #include <math.h>
 #include "vector2D.h"
 
-vec2D :: vec2D(){
+vec2D :: vec2D() {
     x = 0;
     y = 0;
 }
 
-vec2D :: vec2D(float x, float y){
-    this -> x = x;
-    this -> y = y;
+vec2D :: vec2D(float x, float y) {
+    this->x = x;
+    this->y = y;
 }
 
-vec2D vec2D::operator+(const vec2D& a)const{
+vec2D vec2D::operator+(const vec2D& a)const {
     float sumX, sumY;
-    sumX = this -> x + a.x;
-    sumY = this -> y + a.y;
+    sumX = this->x + a.x;
+    sumY = this->y + a.y;
     return vec2D(sumX, sumY);
 }
 
-vec2D vec2D::operator-(const vec2D& a)const{
+vec2D vec2D::operator-(const vec2D& a)const {
     float sumX, sumY;
-    sumX = this -> x - a.x;
-    sumY = this -> y - a.y;
+    sumX = this->x - a.x;
+    sumY = this->y - a.y;
     return vec2D(sumX, sumY);
 }
 
-vec2D vec2D::operator*(float scalar) const{
+vec2D vec2D::operator*(float scalar) const {
     float prodX, prodY;
-    prodX = scalar * (this -> x);
-    prodY = scalar * (this -> y);
+    prodX = scalar * (this->x);
+    prodY = scalar * (this->y);
     return vec2D(prodX, prodY);
 }
 
@@ -40,8 +40,8 @@ float vec2D::magnitude() const {
     return sqrt(sum);
 }
 
-vec2D vec2D::normalize() const{
-    float xVal= this -> x, yVal= this -> y, length = magnitude();
+vec2D vec2D::normalize() const {
+    float xVal = this->x, yVal = this->y, length = magnitude();
 
     if(length == 0.0f) {
         return vec2D(0, 0);

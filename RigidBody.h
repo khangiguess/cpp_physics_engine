@@ -12,4 +12,5 @@ class RigidBody{
     RigidBody(float mass, vec2D startPos);
     void update(float dt);
     void applyForce(vec2D force);
+    void clearForces();
 };
