@@ -3,9 +3,15 @@
 #include "vector2D.h"
 #include <iostream>
 
+
+// Run this to test: g++ main.cpp vector2D.cpp -o main && ./main
+
 int main() {
-    vec2D v1(6, 7);
-    vec2D v2 = v1 * 3;
-    std::cout << v2.x << ", " << v2.y << "\n";
-    return 0;
+    vec2D a(6, 7);
+    vec2D b(1, 1);
+
+    a -= b;
+    std::cout << a.x << ", " << a.y << "\n"; // should be 5, 6
+    a += b;
+    std::cout << a.x << ", " << a.y << "\n"; // should be 6, 7
 }

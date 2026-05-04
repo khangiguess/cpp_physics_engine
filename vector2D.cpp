@@ -3,12 +3,12 @@
 #include <math.h>
 #include "vector2D.h"
 
-vec2D :: vec2D() {
+vec2D::vec2D() {
     x = 0;
     y = 0;
 }
 
-vec2D :: vec2D(float x, float y) {
+vec2D::vec2D(float x, float y) {
     this->x = x;
     this->y = y;
 }
@@ -20,11 +20,23 @@ vec2D vec2D::operator+(const vec2D& a)const {
     return vec2D(sumX, sumY);
 }
 
+vec2D& vec2D::operator+=(const vec2D& a) {
+    this->x += a.x;
+    this->y += a.y;
+    return *this;
+}
+
 vec2D vec2D::operator-(const vec2D& a)const {
     float sumX, sumY;
     sumX = this->x - a.x;
     sumY = this->y - a.y;
     return vec2D(sumX, sumY);
+}
+
+vec2D& vec2D::operator-=(const vec2D& a) {
+    this->x -= a.x;
+    this->y -= a.y;
+    return *this;
 }
 
 vec2D vec2D::operator*(float scalar) const {

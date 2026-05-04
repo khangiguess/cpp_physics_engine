@@ -33,11 +33,25 @@ public:
     vec2D operator+(const vec2D& a) const;
 
     /**
+     * @brief Adds another vector to this one in place
+     * @param a - the vector to add
+     * @return reference to this vec2D after addition
+     */
+    vec2D& operator+=(const vec2D& a);
+
+    /**
      * @brief Subtracts two vectors component-wise.
      * @param a - the vector to subtract
      * @return a new vec2D equal to this - a
      */
     vec2D operator-(const vec2D& a) const;
+
+    /**
+     * @brief Subtracts another vector to this one in place
+     * @param a - the vector to subtract
+     * @return reference to this vec2D after subtraction
+     */
+    vec2D& operator-=(const vec2D& a);
 
     /**
      * @brief Scales the vector by a scalar.
