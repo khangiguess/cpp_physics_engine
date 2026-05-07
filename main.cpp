@@ -14,8 +14,9 @@ int main() {
     circle.setOrigin({20.f, 20.f});  // set origin to center of circle
 
     while (window.isOpen()) {
-        while (const std::optional event = window.pollEvent()) {
-            if (event->is<sf::Event::Closed>())
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed)
                 window.close();
         }
 
