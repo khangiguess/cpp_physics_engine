@@ -1,6 +1,6 @@
 #pragma once
 #include <math.h>
-#include <vector2D.h>
+#include "vector2D.h"
 
 /**
  * @brief Represents a physical object in 2D space.
@@ -50,4 +50,6 @@ public:
      * so forces don't accumulate across frames.
      */
     void clearForces();
+
+    float getMass() const { return mass; }
 };

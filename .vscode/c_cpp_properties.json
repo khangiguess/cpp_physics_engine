@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "name": "Mac",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/opt/homebrew/Cellar/sfml/3.0.2/include"
+            ],
+            "compilerPath": "/usr/bin/g++",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}
