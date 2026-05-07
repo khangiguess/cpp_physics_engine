@@ -1,6 +1,7 @@
 #pragma once
 #include <math.h>
 #include "vector2D.h"
+#include "shape.h"
 
 /**
  * @brief Represents a physical object in 2D space.
@@ -15,7 +16,8 @@ public:
     vec2D velocity;     ///< speed and direction (meters/second)
     vec2D acceleration; ///< current acceleration (meters/second^2)
     float mass;         ///< mass of the object (kg)
-
+    shape* shape;
+    
     /**
      * @brief Creates a RigidBody at a given position with a given mass.
      * @param mass - mass of the object (kg)
