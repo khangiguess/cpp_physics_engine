@@ -16,14 +16,18 @@ public:
     vec2D velocity;     ///< speed and direction (meters/second)
     vec2D acceleration; ///< current acceleration (meters/second^2)
     float mass;         ///< mass of the object (kg)
-    shape* shape;
+    float invMass;
+    shape* m_shape;     ///< shape of the rigid body for collision detection
+    float restitution; // Coefficient of elasticity
     
     /**
-     * @brief Creates a RigidBody at a given position with a given mass.
-     * @param mass - mass of the object (kg)
-     * @param startPos - starting position as a vec2D
+     * @brief Creates a RigidBody.
+     * @param mass - mass of the object (0.0f makes it an immovable static object)
+     * @param startPos - starting position
+     * @param s - pointer to the shape geometry
+     * @param bounciness - how bouncy the object is (default 0.5)
      */
-    RigidBody(float mass, vec2D startPos);
+    RigidBody(float mass, vec2D startPos, shape* s, float bounciness = 0.5f);
 
     /**
      * @brief Steps the simulation forward by dt seconds.
@@ -54,4 +58,5 @@ public:
     void clearForces();
 
     float getMass() const { return mass; }
+    float getInvMass() const { return invMass; }
 };

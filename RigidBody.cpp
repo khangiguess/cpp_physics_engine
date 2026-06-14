@@ -2,11 +2,21 @@
 /// @brief Implementation of the RigidBody class.
 #include "RigidBody.h"
 
-RigidBody::RigidBody(float mass, vec2D startPos) {
+RigidBody::RigidBody(float mass, vec2D startPos, shape* s, float bounciness) {
     this->mass = mass;
     this->position = startPos;
-    this->acceleration = vec2D();
-    this->velocity = vec2D();
+    this->velocity = vec2D(0, 0);
+    this->acceleration = vec2D(0, 0);
+    
+    this->m_shape = s;
+    this->restitution = bounciness;
+
+    //calculate Inverse Mass
+    if (this->mass <= 0.0f) {
+        this->invMass = 0.0f; // It's a static wall! It cannot move.
+    } else {
+        this->invMass = 1.0f / this->mass;
+    }
 }
 
 void RigidBody::update(float dt) {

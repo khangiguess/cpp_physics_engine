@@ -18,7 +18,7 @@ manifold generateManifold(const shape& a, const shape& b,
         if(a.type == shapeType::CIRCLE && b.type == shapeType::CIRCLE){
             const circle& circA = static_cast<const circle&>(a);
             const circle& circB = static_cast<const circle&>(b);
-            vec2D distVec = distanceVec(posA, posB);
+            vec2D distVec = distanceVec(posB, posA);
             float dist = distVec.magnitude();
             float radiusSum = circA.radius + circB.radius;
 
@@ -33,9 +33,10 @@ manifold generateManifold(const shape& a, const shape& b,
                     m.penetration = circA.radius;
                 }
                 return m;
-
             }
         }
     
+    // Default: no collision for unsupported shape pairs
+    return manifold();
 }
 
