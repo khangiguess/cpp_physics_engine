@@ -1,5 +1,6 @@
 #include "World.h"
 #include "collision.h"
+#include <algorithm>
 
 World::World(vec2D gravity) {
     this->gravity = gravity;
@@ -23,16 +24,36 @@ void World::step(float dt) {
             manifold m = generateManifold(*(bodyA->m_shape), *(bodyB->m_shape), bodyA->position, bodyB->position);
 
             if (m.isColliding) {
-                float invMassA = 1.0f / bodyA->getMass();
-                float invMassB = 1.0f / bodyB->getMass();
+                float invMassA = bodyA->getInvMass();
+                float invMassB = bodyB->getInvMass();
                 float totalInvMass = invMassA + invMassB;
 
                 if (totalInvMass > 0.0f) {
+                    // --- SEPARATION ---
                     float moveRatioA = invMassA / totalInvMass;
                     float moveRatioB = invMassB / totalInvMass;
 
                     bodyA->position = bodyA->position - (m.normal * m.penetration * moveRatioA);
                     bodyB->position = bodyB->position + (m.normal * m.penetration * moveRatioB);
+
+                    // --- IMPULSE RESPONSE ---
+                    // Calculate relative velocity at collision point
+                    vec2D relativeVelocity = bodyB->velocity - bodyA->velocity;
+                    float velocityAlongNormal = relativeVelocity.dot(m.normal);
+
+                    // Only resolve if objects are moving towards each other
+                    if (velocityAlongNormal < 0.0f) {
+                        // Calculate restitution (bounciness)
+                        float restitution = std::min(bodyA->restitution, bodyB->restitution);
+                        
+                        // Calculate impulse magnitude
+                        float impulseMagnitude = -(1.0f + restitution) * velocityAlongNormal / totalInvMass;
+                        
+                        // Apply impulse to velocities
+                        vec2D impulse = m.normal * impulseMagnitude;
+                        bodyA->velocity = bodyA->velocity - (impulse * invMassA);
+                        bodyB->velocity = bodyB->velocity + (impulse * invMassB);
+                    }
                 }
                 
             }

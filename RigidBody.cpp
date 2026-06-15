@@ -25,7 +25,10 @@ void RigidBody::update(float dt) {
 }
 
 void RigidBody::applyForce(vec2D force) {
-    this->acceleration += force * (1.0f / (this->mass));
+    if (this->mass > 0.0f) {
+        this->acceleration += force * (1.0f / (this->mass));
+    }
+    // Static bodies (mass == 0) don't accelerate
 }
 
 void RigidBody::clearForces() {

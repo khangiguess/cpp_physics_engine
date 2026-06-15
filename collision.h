@@ -1,6 +1,8 @@
 #include "vector2D.h"
 #include "shape.h"
 #include "circle.h"
+#include "box.h"
+#include <algorithm>
 #pragma once
 
 struct manifold {
@@ -36,6 +38,58 @@ manifold generateManifold(const shape& a, const shape& b,
             }
         }
     
+
+        else if (a.type == shapeType::CIRCLE && b.type == shapeType::BOX) {
+            const circle& circA = static_cast<const circle&>(a);
+            const box& boxB = static_cast<const box&>(b);
+
+            manifold m; // Defaults to false
+
+            // 1. Get vector pointing from Box center to Circle center
+            vec2D diff = distanceVec(posA, posB); 
+
+            // 2. Calculate the half-extents (half width, half height) of the box
+            float halfWidth = boxB.width / 2.0f;
+            float halfHeight = boxB.height / 2.0f;
+
+            // 3. Clamp the vector to find the Closest Point on the Box's surface
+            vec2D clamped;
+            clamped.x = std::clamp(diff.x, -halfWidth, halfWidth);
+            clamped.y = std::clamp(diff.y, -halfHeight, halfHeight);
+
+            // Calculate the absolute world position of that Closest Point
+            vec2D closestPoint = vec2D(posB.x + clamped.x, posB.y + clamped.y);
+
+            // 4. Get the vector from the Closest Point to the Circle Center
+            vec2D distanceToClosest = distanceVec(closestPoint, posA);
+            float dist = distanceToClosest.magnitude();
+
+            // 5. If distance is less than radius, we have a collision!
+            if (dist < circA.radius) {
+                m.isColliding = true;
+                m.penetration = circA.radius - dist;
+                
+                // Safety: if the circle's center perfectly overlaps the closest point
+                if (dist == 0.0f) {
+                    // Force a normal pointing upwards to push it out
+                    m.normal = vec2D(0, -1); 
+                } else {
+                    m.normal = distanceToClosest.normalize();
+                }
+            }
+            return m;
+    }
+
+    //Swap the argument in case parameters passed in as BOX-CIRCLE
+    else if (a.type == shapeType::BOX && b.type == shapeType::CIRCLE) {
+        manifold m = generateManifold(b, a, posB, posA);
+        
+        if (m.isColliding) {
+            m.normal = vec2D(-m.normal.x, -m.normal.y); 
+        }
+        return m;
+    }
+
     // Default: no collision for unsupported shape pairs
     return manifold();
 }
