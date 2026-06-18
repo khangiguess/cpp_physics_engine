@@ -3,12 +3,14 @@
 #include "circle.h"
 #include "box.h"
 #include <algorithm>
+#include <cmath> // Added for std::abs and std::max/min
 #pragma once
 
 struct manifold {
     bool isColliding = false;
     vec2D normal;
     float penetration; //The total overlap of 2 objects
+    vec2D contactPoint; //The physical location of the collision strike in world space
 };
 
 vec2D distanceVec(const vec2D& a, const vec2D& b){ //points from a to b
@@ -17,6 +19,10 @@ vec2D distanceVec(const vec2D& a, const vec2D& b){ //points from a to b
 
 manifold generateManifold(const shape& a, const shape& b, 
     const vec2D& posA, const vec2D& posB){
+        
+        // ---------------------------------------------------------
+        // CIRCLE vs CIRCLE
+        // ---------------------------------------------------------
         if(a.type == shapeType::CIRCLE && b.type == shapeType::CIRCLE){
             const circle& circA = static_cast<const circle&>(a);
             const circle& circB = static_cast<const circle&>(b);
@@ -34,11 +40,16 @@ manifold generateManifold(const shape& a, const shape& b,
                     m.normal = vec2D(1, 0);
                     m.penetration = circA.radius;
                 }
+                
+                // Contact point is exactly on the edge of Circle A along the normal vector
+                m.contactPoint = vec2D(posA.x + m.normal.x * circA.radius, posA.y + m.normal.y * circA.radius);
                 return m;
             }
         }
     
-
+        // ---------------------------------------------------------
+        // CIRCLE vs BOX
+        // ---------------------------------------------------------
         else if (a.type == shapeType::CIRCLE && b.type == shapeType::BOX) {
             const circle& circA = static_cast<const circle&>(a);
             const box& boxB = static_cast<const box&>(b);
@@ -76,10 +87,16 @@ manifold generateManifold(const shape& a, const shape& b,
                 } else {
                     m.normal = distanceToClosest.normalize();
                 }
+                
+                // Contact point is exactly the closest point we clamped to on the Box's surface!
+                m.contactPoint = closestPoint;
             }
             return m;
     }
 
+    // ---------------------------------------------------------
+    // BOX vs CIRCLE
+    // ---------------------------------------------------------
     //Swap the argument in case parameters passed in as BOX-CIRCLE
     else if (a.type == shapeType::BOX && b.type == shapeType::CIRCLE) {
         manifold m = generateManifold(b, a, posB, posA);
@@ -87,10 +104,13 @@ manifold generateManifold(const shape& a, const shape& b,
         if (m.isColliding) {
             m.normal = vec2D(-m.normal.x, -m.normal.y); 
         }
+        // The contact point returned by the swapped call is already in correct world space, no change needed!
         return m;
     }
 
-    //BOX vs BOX
+    // ---------------------------------------------------------
+    // BOX vs BOX
+    // ---------------------------------------------------------
     else if (a.type == shapeType::BOX && b.type == shapeType::BOX) {
         const box& boxA = static_cast<const box&>(a);
         const box& boxB = static_cast<const box&>(b);
@@ -141,10 +161,18 @@ manifold generateManifold(const shape& a, const shape& b,
             }
         }
 
+        // Contact point for box-vs-box is estimated as the exact geometric center of the overlapping rectangle
+        float minX = std::max(posA.x - halfWidthA, posB.x - halfWidthB);
+        float maxX = std::min(posA.x + halfWidthA, posB.x + halfWidthB);
+        float minY = std::max(posA.y - halfHeightA, posB.y - halfHeightB);
+        float maxY = std::min(posA.y + halfHeightA, posB.y + halfHeightB);
+
+        m.contactPoint.x = (minX + maxX) / 2.0f;
+        m.contactPoint.y = (minY + maxY) / 2.0f;
+
         return m;
     }
 
     // Default: no collision for unsupported shape pairs
     return manifold();
 }
-
