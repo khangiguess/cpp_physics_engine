@@ -19,6 +19,8 @@ public:
     float invMass;
     shape* m_shape;     ///< shape of the rigid body for collision detection
     float restitution; // Coefficient of elasticity
+    float staticFriction;  // 0.5f as default
+    float dynamicFriction; // 0.3f as default
     
     /**
      * @brief Creates a RigidBody.
@@ -27,7 +29,7 @@ public:
      * @param s - pointer to the shape geometry
      * @param bounciness - how bouncy the object is (default 0.5)
      */
-    RigidBody(float mass, vec2D startPos, shape* s, float bounciness = 0.5f);
+    RigidBody(float mass, vec2D startPos, shape* s, float bounciness = 0.5f, float staticFriction = 0.5f, float dynamicFriction = 0.3f);
 
     /**
      * @brief Steps the simulation forward by dt seconds.

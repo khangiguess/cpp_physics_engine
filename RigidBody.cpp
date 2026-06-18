@@ -2,7 +2,7 @@
 /// @brief Implementation of the RigidBody class.
 #include "RigidBody.h"
 
-RigidBody::RigidBody(float mass, vec2D startPos, shape* s, float bounciness) {
+RigidBody::RigidBody(float mass, vec2D startPos, shape* s, float bounciness, float staticFriction, float dynamicFriction) {
     this->mass = mass;
     this->position = startPos;
     this->velocity = vec2D(0, 0);
@@ -10,6 +10,9 @@ RigidBody::RigidBody(float mass, vec2D startPos, shape* s, float bounciness) {
     
     this->m_shape = s;
     this->restitution = bounciness;
+    this->staticFriction = staticFriction;
+    this->dynamicFriction = dynamicFriction;
+
 
     //calculate Inverse Mass
     if (this->mass <= 0.0f) {
