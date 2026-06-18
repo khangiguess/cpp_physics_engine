@@ -46,6 +46,8 @@ const sf::Color OBJ_B_COLOR       = sf::Color::Red;
 
 
 
+
+
 // =============================================================================
 // 2. RENDERING PIPELINE STRUCTURES & HELPERS
 // =============================================================================
@@ -93,6 +95,9 @@ Actor createActor(World& world, float mass, vec2D pos, vec2D vel, shape* physSha
 
     return { body, physShape, visualShape };
 }
+
+
+
 
 
 
