@@ -25,8 +25,9 @@ const float OBJ_A_MASS            = 100.f;
 const float OBJ_A_BOUNCINESS      = 0.5f;
 const float OBJ_A_STATIC_FRIC     = 0.2f;
 const float OBJ_A_DYNAMIC_FRIC    = 0.1f;
-const vec2D OBJ_A_START_POS       = vec2D(300.f, 580.f); //Origin is set at top left corner
+const vec2D OBJ_A_START_POS       = vec2D(300.f, 200.f); //Origin is set at top left corner
 const vec2D OBJ_A_START_VEL       = vec2D(300.f, 0.f);
+const float OBJ_A_START_ANGLE     = 0.5f;  
 const sf::Color OBJ_A_COLOR       = sf::Color::Green;
 
 // Dynamic Object B (Khang) Config
@@ -34,8 +35,9 @@ const float OBJ_B_MASS            = 100.f;
 const float OBJ_B_BOUNCINESS      = 0.5f;
 const float OBJ_B_STATIC_FRIC     = 0.2f;
 const float OBJ_B_DYNAMIC_FRIC    = 0.1f;
-const vec2D OBJ_B_START_POS       = vec2D(500.f, 580.f); //Origin is set at top left corner
+const vec2D OBJ_B_START_POS       = vec2D(500.f, 200.f); //Origin is set at top left corner
 const vec2D OBJ_B_START_VEL       = vec2D(-300.f, 0.f);
+const float OBJ_B_START_ANGLE     = 0.5f;  
 const sf::Color OBJ_B_COLOR       = sf::Color::Red;
 
 
@@ -67,10 +69,10 @@ struct Actor {
  * its matching SFML visual counterpart.
  */
 Actor createActor(World& world, float mass, vec2D pos, vec2D vel, shape* physShape, sf::Color color, 
-                  float bounce = 0.4f, float staticF = 0.4f, float dynamicF = 0.15f) {
+                  float bounce = 0.4f, float staticF = 0.4f, float dynamicF = 0.15f, float startAngle = 0.0f) {
     
     // Create physical RigidBody and add to physics engine
-    RigidBody* body = new RigidBody(mass, pos, physShape, bounce, staticF, dynamicF);
+    RigidBody* body = new RigidBody(mass, pos, physShape, bounce, staticF, dynamicF, startAngle);
     body->velocity = vel;
     world.addBody(body);
 
@@ -130,8 +132,8 @@ int main() {
     shape* shapeB = new box(35.f, 15.f);
 
     // Create the physical + visual dynamic actors
-    actors.push_back(createActor(my_world, OBJ_A_MASS, OBJ_A_START_POS, OBJ_A_START_VEL, shapeA, OBJ_A_COLOR, OBJ_A_BOUNCINESS, OBJ_A_STATIC_FRIC, OBJ_A_DYNAMIC_FRIC));
-    actors.push_back(createActor(my_world, OBJ_B_MASS, OBJ_B_START_POS, OBJ_B_START_VEL, shapeB, OBJ_B_COLOR, OBJ_B_BOUNCINESS, OBJ_B_STATIC_FRIC, OBJ_B_DYNAMIC_FRIC));
+    actors.push_back(createActor(my_world, OBJ_A_MASS, OBJ_A_START_POS, OBJ_A_START_VEL, shapeA, OBJ_A_COLOR, OBJ_A_BOUNCINESS, OBJ_A_STATIC_FRIC, OBJ_A_DYNAMIC_FRIC, OBJ_A_START_ANGLE));
+    actors.push_back(createActor(my_world, OBJ_B_MASS, OBJ_B_START_POS, OBJ_B_START_VEL, shapeB, OBJ_B_COLOR, OBJ_B_BOUNCINESS, OBJ_B_STATIC_FRIC, OBJ_B_DYNAMIC_FRIC, OBJ_B_START_ANGLE));
 
     // -------------------------------------------------------------
     // DYNAMIC ARENA BOUNDARY WALL GENERATION (Self-correcting size)
@@ -156,17 +158,21 @@ int main() {
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
                 window.close();
-        }
+        } // <-- FIX: Added missing closing brace for the pollEvent loop
 
-        // 1. Advance the mathematical physics step
+        //Advance the mathematical physics step
         my_world.step(TIME_STEP);
         
-        // 2. Synchronize visual positions with the updated physics positions
+        //Synchronize visual positions and rotations with the updated physics positions
         for (auto& actor : actors) {
             actor.visualShape->setPosition({actor.body->position.x, actor.body->position.y});
+            
+            // Convert radians to degrees for SFML rotation mapping
+            float angleDegrees = actor.body->angle * 180.0f / 3.14159265f;
+            actor.visualShape->setRotation(angleDegrees);
         }
 
-        // 3. Clear window, render all actors dynamically, and display frame
+        //Clear window, render all actors dynamically, and display frame
         window.clear(sf::Color::Black);
         
         for (const auto& actor : actors) {
@@ -176,9 +182,7 @@ int main() {
         window.display();
     }
 
-    // -------------------------------------------------------------
-    // CLEANUP MEMORY (Good C++ resource management)
-    // -------------------------------------------------------------
+    // CLEANUP MEMORY
     for (auto& actor : actors) {
         delete actor.body;
         delete actor.physicalShape;
