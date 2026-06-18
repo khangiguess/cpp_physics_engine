@@ -39,6 +39,13 @@ const vec2D OBJ_B_START_VEL       = vec2D(-300.f, 0.f);
 const sf::Color OBJ_B_COLOR       = sf::Color::Red;
 
 
+
+
+
+
+
+
+
 // =============================================================================
 // 2. RENDERING PIPELINE STRUCTURES & HELPERS
 // =============================================================================
@@ -87,6 +94,14 @@ Actor createActor(World& world, float mass, vec2D pos, vec2D vel, shape* physSha
     return { body, physShape, visualShape };
 }
 
+
+
+
+
+
+
+
+
 // =============================================================================
 // 3. MAIN GAME ENTRY POINT
 // =============================================================================
@@ -102,9 +117,8 @@ int main() {
     std::vector<Actor> actors;
 
     // -------------------------------------------------------------
-    // SETUP DYNAMIC OBJECT SHAPES (Change shapes here!)
+    // Change shapes here!
     // -------------------------------------------------------------
-    // You can easily swap shapes by uncommenting/commenting these lines:
     // shape* shapeA = new circle(20.f);
     // shape* shapeB = new circle(20.f);
     shape* shapeA = new box(35.f, 15.f); 
