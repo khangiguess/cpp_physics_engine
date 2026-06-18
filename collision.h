@@ -11,7 +11,7 @@ struct manifold {
     float penetration; //The total overlap of 2 objects
 };
 
-vec2D distanceVec(const vec2D& a, const vec2D& b){
+vec2D distanceVec(const vec2D& a, const vec2D& b){ //points from a to b
     return vec2D(a.x - b.x, a.y - b.y);
 }
 
@@ -69,7 +69,7 @@ manifold generateManifold(const shape& a, const shape& b,
                 m.isColliding = true;
                 m.penetration = circA.radius - dist;
                 
-                // Safety: if the circle's center perfectly overlaps the closest point
+                //if the circle's center perfectly overlaps the closest point
                 if (dist == 0.0f) {
                     // Force a normal pointing upwards to push it out
                     m.normal = vec2D(0, -1); 
@@ -87,6 +87,60 @@ manifold generateManifold(const shape& a, const shape& b,
         if (m.isColliding) {
             m.normal = vec2D(-m.normal.x, -m.normal.y); 
         }
+        return m;
+    }
+
+    //BOX vs BOX
+    else if (a.type == shapeType::BOX && b.type == shapeType::BOX) {
+        const box& boxA = static_cast<const box&>(a);
+        const box& boxB = static_cast<const box&>(b);
+
+        manifold m;
+
+        vec2D diff = distanceVec(posB, posA);
+
+        //overlap along the X-axis
+        float halfWidthA = boxA.width / 2.0f;
+        float halfWidthB = boxB.width / 2.0f;
+        float overlapX = (halfWidthA + halfWidthB) - std::abs(diff.x);
+
+        // No overlap along X means they are separated
+        if (overlapX <= 0.0f) {
+            return m;
+        }
+
+        // 3. Calculate overlap along the Y-axis
+        float halfHeightA = boxA.height / 2.0f;
+        float halfHeightB = boxB.height / 2.0f;
+        float overlapY = (halfHeightA + halfHeightB) - std::abs(diff.y);
+
+        // No overlap along Y means they are separated
+        if (overlapY <= 0.0f) {
+            return m;
+        }
+
+        //Overlap detected on both axes
+        m.isColliding = true;
+
+        //Resolve along the axis of MINIMUM penetration
+        if (overlapX < overlapY) {
+            m.penetration = overlapX;
+            // Normal points from A to B
+            if (diff.x > 0.0f) {
+                m.normal = vec2D(1.0f, 0.0f); // B is to the right
+            } else {
+                m.normal = vec2D(-1.0f, 0.0f); // B is to the left
+            }
+        } else {
+            m.penetration = overlapY;
+            // Normal points from A to B
+            if (diff.y > 0.0f) {
+                m.normal = vec2D(0.0f, 1.0f); // B is below A
+            } else {
+                m.normal = vec2D(0.0f, -1.0f); // B is above A
+            }
+        }
+
         return m;
     }
 
