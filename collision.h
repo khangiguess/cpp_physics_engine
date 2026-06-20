@@ -11,14 +11,15 @@ struct manifold {
     bool isColliding = false;
     vec2D normal;
     float penetration;
-    vec2D contactPoint;
+    vec2D contactPoints[2];
+    float penetrations[2];   // NEW — per-point depth, derived from the clip
+    int contactCount = 0;
 };
 
-vec2D distanceVec(const vec2D& a, const vec2D& b){ // points from b to a
+vec2D distanceVec(const vec2D& a, const vec2D& b){ 
     return vec2D(a.x - b.x, a.y - b.y);
 }
 
-// Helper function to calculate the 4 rotated corners of an OBB in world space
 inline std::array<vec2D, 4> getOBBVertices(const box& b, const vec2D& pos, float angle) {
     std::array<vec2D, 4> vertices;
     float hw = b.width / 2.0f;
@@ -26,13 +27,11 @@ inline std::array<vec2D, 4> getOBBVertices(const box& b, const vec2D& pos, float
     float c = std::cos(angle);
     float s = std::sin(angle);
 
-    // Unrotated local corners
     vec2D corners[4] = {
         vec2D(-hw, -hh), vec2D(hw, -hh),
         vec2D(hw, hh), vec2D(-hw, hh)
     };
 
-    // Rotate and translate to world space
     for(int i = 0; i < 4; i++) {
         vertices[i].x = pos.x + (corners[i].x * c - corners[i].y * s);
         vertices[i].y = pos.y + (corners[i].x * s + corners[i].y * c);
@@ -40,7 +39,52 @@ inline std::array<vec2D, 4> getOBBVertices(const box& b, const vec2D& pos, float
     return vertices;
 }
 
-// UPDATED: Now accepts angleA and angleB to support rotation!
+struct FaceInfo {
+    int i0, i1;      // vertex indices forming the face (i0 -> i1)
+    vec2D normal;    // outward unit normal of that face
+};
+
+// Finds the edge of `verts` whose outward normal points most closely along `dir`.
+// Works for any CCW-wound quad, so it's robust to rotation — no reliance on
+// local-axis bookkeeping like your old axes[] array.
+inline FaceInfo findBestFace(const std::array<vec2D, 4>& verts, const vec2D& dir) {
+    float bestDot = -1e9f;
+    int bestIdx = 0;
+    vec2D bestNormal;
+
+    for (int i = 0; i < 4; i++) {
+        int j = (i + 1) % 4;
+        vec2D edge = verts[j] - verts[i];
+        vec2D normal = vec2D(edge.y, -edge.x).normalize(); // outward for CCW winding
+
+        float d = normal.dot(dir);
+        if (d > bestDot) {
+            bestDot = d;
+            bestIdx = i;
+            bestNormal = normal;
+        }
+    }
+    return { bestIdx, (bestIdx + 1) % 4, bestNormal };
+}
+
+// Clips segment [v0,v1] against one half-plane: keeps points where
+// dot(planeDir, p) <= offset, interpolating the cut point if the segment
+// straddles the plane. Returns how many points were written (0–2).
+inline int clipSegmentToLine(const vec2D& v0, const vec2D& v1, const vec2D& planeDir, float offset, vec2D out[2]) {
+    int count = 0;
+    float d0 = planeDir.dot(v0) - offset;
+    float d1 = planeDir.dot(v1) - offset;
+
+    if (d0 <= 0.0f) out[count++] = v0;
+    if (d1 <= 0.0f) out[count++] = v1;
+
+    if (d0 * d1 < 0.0f) { // straddles — compute intersection
+        float t = d0 / (d0 - d1);
+        out[count++] = v0 + (v1 - v0) * t;
+    }
+    return count;
+}
+
 manifold generateManifold(const shape& a, const shape& b, 
     const vec2D& posA, const vec2D& posB, float angleA = 0.0f, float angleB = 0.0f){
         
@@ -64,13 +108,15 @@ manifold generateManifold(const shape& a, const shape& b,
                 m.normal = vec2D(1, 0);
                 m.penetration = circA.radius;
             }
-            m.contactPoint = vec2D(posA.x + m.normal.x * circA.radius, posA.y + m.normal.y * circA.radius);
+            // Populate array instead of single point
+            m.contactPoints[0] = vec2D(posA.x + m.normal.x * circA.radius, posA.y + m.normal.y * circA.radius);
+            m.contactCount = 1; 
             return m;
         }
     }
     
     // ---------------------------------------------------------
-    // CIRCLE vs BOX (Rotated OBB)
+    // CIRCLE vs BOX 
     // ---------------------------------------------------------
     else if (a.type == shapeType::CIRCLE && b.type == shapeType::BOX) {
         const circle& circA = static_cast<const circle&>(a);
@@ -78,20 +124,17 @@ manifold generateManifold(const shape& a, const shape& b,
 
         manifold m; 
         
-        // 1. Convert Circle center to Box's local (unrotated) space
-        vec2D diff = distanceVec(posA, posB); // Points from Box to Circle
+        vec2D diff = distanceVec(posA, posB); 
         float c = std::cos(-angleB);
         float s = std::sin(-angleB);
         vec2D localDiff = vec2D(diff.x * c - diff.y * s, diff.x * s + diff.y * c);
 
-        // 2. Clamp in local space
         float halfWidth = boxB.width / 2.0f;
         float halfHeight = boxB.height / 2.0f;
         vec2D localClamped;
         localClamped.x = std::clamp(localDiff.x, -halfWidth, halfWidth);
         localClamped.y = std::clamp(localDiff.y, -halfHeight, halfHeight);
 
-        // 3. Convert Clamped point back to World Space
         float cInv = std::cos(angleB);
         float sInv = std::sin(angleB);
         vec2D closestPoint = vec2D(
@@ -99,7 +142,6 @@ manifold generateManifold(const shape& a, const shape& b,
             posB.y + (localClamped.x * sInv + localClamped.y * cInv)
         );
 
-        // 4. Test distance
         vec2D distanceToClosest = distanceVec(closestPoint, posA);
         float dist = distanceToClosest.magnitude();
 
@@ -112,17 +154,18 @@ manifold generateManifold(const shape& a, const shape& b,
             } else {
                 m.normal = distanceToClosest.normalize();
             }
-            m.contactPoint = closestPoint;
+            // Populate array
+            m.contactPoints[0] = closestPoint;
+            m.contactCount = 1;
         }
         return m;
     }
 
     // ---------------------------------------------------------
-    // BOX vs CIRCLE (Swap arguments & angles)
+    // BOX vs CIRCLE
     // ---------------------------------------------------------
     else if (a.type == shapeType::BOX && b.type == shapeType::CIRCLE) {
         manifold m = generateManifold(b, a, posB, posA, angleB, angleA);
-        
         if (m.isColliding) {
             m.normal = vec2D(-m.normal.x, -m.normal.y); 
         }
@@ -138,7 +181,6 @@ manifold generateManifold(const shape& a, const shape& b,
 
         manifold m;
 
-        // The 4 local axes (normals) of the two boxes
         vec2D axes[4] = {
             vec2D(std::cos(angleA), std::sin(angleA)),
             vec2D(-std::sin(angleA), std::cos(angleA)),
@@ -152,7 +194,6 @@ manifold generateManifold(const shape& a, const shape& b,
         float minOverlap = 1000000.0f;
         vec2D minAxis;
 
-        // Project all corners onto all 4 axes to check for gaps
         for(int i = 0; i < 4; i++) {
             vec2D axis = axes[i];
             
@@ -170,56 +211,72 @@ manifold generateManifold(const shape& a, const shape& b,
                 maxB = std::max(maxB, p);
             }
 
-            // If we found a gap, SAT guarantees they are NOT colliding!
-            if (maxA < minB || maxB < minA) {
-                return m; 
-            }
+            if (maxA < minB || maxB < minA) return m; 
 
-            // Calculate overlap length
             float overlap = std::min(maxA, maxB) - std::max(minA, minB);
             
-            // Keep track of the axis with the smallest overlap
             if (overlap < minOverlap) {
                 minOverlap = overlap;
                 minAxis = axis;
             }
         }
 
-        // Overlap occurred on ALL axes, so they are colliding!
         m.isColliding = true;
         m.penetration = minOverlap;
         
-        // Ensure the normal always points from A to B
         vec2D diff = distanceVec(posB, posA);
         if (diff.x * minAxis.x + diff.y * minAxis.y < 0) {
             minAxis = vec2D(-minAxis.x, -minAxis.y);
         }
         m.normal = minAxis;
 
-        // Contact Point Approximation: 
-        // We find the corner of the incident box that is pushing deepest against the reference box.
+
+        // === STRUCTURAL INCIDENT EDGE DETECTION (The "Segment" Approach) ===
         float dot0 = std::abs(m.normal.x * axes[0].x + m.normal.y * axes[0].y);
         float dot1 = std::abs(m.normal.x * axes[1].x + m.normal.y * axes[1].y);
         bool normalIsFromA = (dot0 > 0.99f || dot1 > 0.99f);
 
-        vec2D contactPoint;
-        if (normalIsFromA) {
-            float minProj = 1000000.0f;
-            for (const auto& v : vertsB) {
-                float proj = v.x * m.normal.x + v.y * m.normal.y;
-                if (proj < minProj) { minProj = proj; contactPoint = v; }
-            }
-        } else {
-            float maxProj = -1000000.0f;
-            for (const auto& v : vertsA) {
-                float proj = v.x * m.normal.x + v.y * m.normal.y;
-                if (proj > maxProj) { maxProj = proj; contactPoint = v; }
+        vec2D refNormal = normalIsFromA ? m.normal : vec2D(-m.normal.x, -m.normal.y);
+        vec2D searchDir = vec2D(-refNormal.x, -refNormal.y);
+
+        const std::array<vec2D, 4>& refVerts = normalIsFromA ? vertsA : vertsB;
+        const std::array<vec2D, 4>& incVerts  = normalIsFromA ? vertsB : vertsA;
+
+        FaceInfo refFace = findBestFace(refVerts, refNormal);
+        FaceInfo incFace = findBestFace(incVerts, searchDir);
+
+        vec2D refP1 = refVerts[refFace.i0];
+        vec2D refP2 = refVerts[refFace.i1];
+        vec2D incP1 = incVerts[incFace.i0];
+        vec2D incP2 = incVerts[incFace.i1];
+
+        vec2D tangent = (refP2 - refP1).normalize();
+
+        // Clip incident edge against the two side planes of the reference face
+        vec2D clip1[2];
+        int n1 = clipSegmentToLine(incP1, incP2, vec2D(-tangent.x, -tangent.y), -tangent.dot(refP1), clip1);
+        if (n1 < 2) { clip1[0] = incP1; clip1[1] = incP2; n1 = 2; } // geometric safety net
+
+        vec2D clip2[2];
+        int n2 = clipSegmentToLine(clip1[0], clip1[1], tangent, tangent.dot(refP2), clip2);
+
+        // Per-point depth check — only keep points that are actually penetrating
+        const float SLOP = 0.01f * std::min(std::min(boxA.width, boxA.height), std::min(boxB.width, boxB.height));
+
+        m.contactCount = 0;
+        for (int i = 0; i < n2 && m.contactCount < 2; i++) {
+            float separation = refFace.normal.dot(clip2[i] - refP1); // >0 outside, <0 penetrating
+            float depth = -separation;
+
+            if (depth > -SLOP) {
+                m.contactPoints[m.contactCount] = clip2[i];
+                m.penetrations[m.contactCount] = std::max(depth, 0.0f);
+                m.contactCount++;
             }
         }
-        m.contactPoint = contactPoint;
 
+        if (m.contactCount == 0) m.isColliding = false;
         return m;
     }
-
     return manifold();
 }

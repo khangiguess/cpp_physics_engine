@@ -18,15 +18,14 @@ RigidBody::RigidBody(float mass, vec2D startPos, shape* s, float bounciness,
     this->staticFriction = staticFriction;
     this->dynamicFriction = dynamicFriction;
 
-    // Calculate Inverse Mass & Moment of Inertia based on Shape geometry
     if (this->mass <= 0.0f) {
         this->invMass = 0.0f;
         this->inertia = 0.0f;
-        this->invInertia = 0.0f; // Static walls don't accelerate or spin
+        this->invInertia = 0.0f;
     } else {
         this->invMass = 1.0f / this->mass;
 
-        // Auto-compute Moment of Inertia (Rotational Inertia)
+        //Moment of Inertia (Rotational Inertia)
         if (s->type == shapeType::CIRCLE) {
             float r = static_cast<circle*>(s)->radius;
             // Solid Cylinder/Disk formula: I = 0.5 * m * r^2
@@ -46,14 +45,15 @@ RigidBody::RigidBody(float mass, vec2D startPos, shape* s, float bounciness,
 }
 
 void RigidBody::update(float dt) {
-    // 1. Linear integration
     this->velocity += (this->acceleration) * dt;
     this->position += (this->velocity) * dt;
 
-    // 2. Angular integration
     float angularAcceleration = this->torque * this->invInertia;
     this->angularVelocity += angularAcceleration * dt;
     this->angle += this->angularVelocity * dt;
+    
+    //Clamp micro-velocities (Linear ONLY)
+    if (this->velocity.magnitude() < 0.1f) this->velocity = vec2D(0, 0);
 }
 
 void RigidBody::applyForce(vec2D force) {
