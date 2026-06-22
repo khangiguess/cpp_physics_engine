@@ -54,6 +54,8 @@ void RigidBody::update(float dt) {
     
     //Clamp micro-velocities (Linear ONLY)
     if (this->velocity.magnitude() < 0.1f) this->velocity = vec2D(0, 0);
+    //Kill micro-rotation
+    if (std::abs(this->angularVelocity) < 0.1f) this->angularVelocity = 0.0f;
 }
 
 void RigidBody::applyForce(vec2D force) {

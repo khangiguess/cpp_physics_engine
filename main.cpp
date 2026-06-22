@@ -14,31 +14,12 @@ const unsigned int WINDOW_HEIGHT  = 600;
 const float TIME_STEP             = 0.016f; // Standard physics time step (60 FPS)
 
 // Global Physics Setting
-const vec2D GRAVITY(0.0f, 200.f);          // Gravity vector (x, y)
+const vec2D GRAVITY(0.0f, 200.f);         
 
 // Arena Wall Configurations
 const float WALL_THICKNESS        = 20.f;  // Width/thickness of boundary walls
 const sf::Color WALL_COLOR        = sf::Color(100, 100, 100); // Dark Gray
 
-// Dynamic Object A (Fay) Config
-const float OBJ_A_MASS            = 100.f;
-const float OBJ_A_BOUNCINESS      = 0.5f;
-const float OBJ_A_STATIC_FRIC     = 0.2f;
-const float OBJ_A_DYNAMIC_FRIC    = 0.1f;
-const vec2D OBJ_A_START_POS       = vec2D(300.f, 200.f); //Origin is set at top left corner
-const vec2D OBJ_A_START_VEL       = vec2D(300.f, 0.f);
-const float OBJ_A_START_ANGLE     = 0.5f;  
-const sf::Color OBJ_A_COLOR       = sf::Color::Green;
-
-// Dynamic Object B (Khang) Config
-const float OBJ_B_MASS            = 100.f;
-const float OBJ_B_BOUNCINESS      = 0.5f;
-const float OBJ_B_STATIC_FRIC     = 0.2f;
-const float OBJ_B_DYNAMIC_FRIC    = 0.1f;
-const vec2D OBJ_B_START_POS       = vec2D(500.f, 200.f); //Origin is set at top left corner
-const vec2D OBJ_B_START_VEL       = vec2D(-300.f, 0.f);
-const float OBJ_B_START_ANGLE     = 0.5f;  
-const sf::Color OBJ_B_COLOR       = sf::Color::Red;
 
 
 
@@ -119,21 +100,34 @@ int main() {
     
     // Create physical world with configured gravity
     World my_world(GRAVITY); 
-    
-    // Store all actors (dynamic objects & walls) in a single vector
     std::vector<Actor> actors;
 
-    // -------------------------------------------------------------
-    // Change shapes here!
-    // -------------------------------------------------------------
-    // shape* shapeA = new circle(20.f);
-    // shape* shapeB = new circle(20.f);
-    shape* shapeA = new box(35.f, 15.f); 
-    shape* shapeB = new box(35.f, 15.f);
+    const int TOWER_HEIGHT = 8;     // Number of boxes in the stack
+    const float BOX_SIZE = 40.f;    // 40x40 pixel boxes
 
-    // Create the physical + visual dynamic actors
-    actors.push_back(createActor(my_world, OBJ_A_MASS, OBJ_A_START_POS, OBJ_A_START_VEL, shapeA, OBJ_A_COLOR, OBJ_A_BOUNCINESS, OBJ_A_STATIC_FRIC, OBJ_A_DYNAMIC_FRIC, OBJ_A_START_ANGLE));
-    actors.push_back(createActor(my_world, OBJ_B_MASS, OBJ_B_START_POS, OBJ_B_START_VEL, shapeB, OBJ_B_COLOR, OBJ_B_BOUNCINESS, OBJ_B_STATIC_FRIC, OBJ_B_DYNAMIC_FRIC, OBJ_B_START_ANGLE));
+    for (int i = 0; i < TOWER_HEIGHT; i++) {
+        // Create a new shape for every actor to prevent double-free memory crashes during cleanup
+        shape* boxShape = new box(BOX_SIZE, BOX_SIZE);
+        
+        // Stack directly in the center, dropping  with 5-pixel gap between each
+        vec2D startPos(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT - 100.f - (i * (BOX_SIZE + 5.f)));
+        
+        // Alternate colors
+        sf::Color color = (i % 2 == 0) ? sf::Color::Red : sf::Color::Blue;
+
+        actors.push_back(createActor(
+            my_world, 
+            100.f,           // Mass
+            startPos,        // Position
+            vec2D(0.f, 0.f), // Start Velocity
+            boxShape,        // Physical Shape
+            color,           // Color
+            0.0f,            // ZERO bounciness so they try to rest immediately
+            0.5f,            // High Static Friction
+            0.3f,            // Standard Dynamic Friction
+            0.0f             // Angle
+        ));
+    }
 
     // -------------------------------------------------------------
     // DYNAMIC ARENA BOUNDARY WALL GENERATION (Self-correcting size)
@@ -158,7 +152,7 @@ int main() {
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
                 window.close();
-        } // <-- FIX: Added missing closing brace for the pollEvent loop
+        }
 
         //Advance the mathematical physics step
         my_world.step(TIME_STEP);
@@ -178,7 +172,15 @@ int main() {
         for (const auto& actor : actors) {
             window.draw(*(actor.visualShape));
         }
-        
+        // Directional vectors for testing
+        /*
+        for (const auto& line : my_world.debugLines) {
+            sf::Vertex sfmlLine[] = {
+                sf::Vertex(sf::Vector2f(line.start.x, line.start.y), line.color),
+                sf::Vertex(sf::Vector2f(line.end.x, line.end.y), line.color)
+            };
+            window.draw(sfmlLine, 2, sf::Lines);
+        }*/   
         window.display();
     }
 

@@ -12,8 +12,10 @@ struct manifold {
     vec2D normal;
     float penetration;
     vec2D contactPoints[2];
-    float penetrations[2];   // NEW — per-point depth, derived from the clip
+    float penetrations[2];  
     int contactCount = 0;
+    float normalImpulse[2] = {0.0f, 0.0f};
+    float tangentImpulse[2] = {0.0f, 0.0f};
 };
 
 vec2D distanceVec(const vec2D& a, const vec2D& b){ 
