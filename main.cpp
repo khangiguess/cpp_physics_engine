@@ -3,6 +3,8 @@
 #include "World.h"
 #include "circle.h"
 #include "box.h"
+#include <cstdlib>
+#include <ctime>
 
 // =============================================================================
 // 1. CONFIGURATION PARAMETERS
@@ -19,8 +21,27 @@ const vec2D GRAVITY(0.0f, 200.f);
 // Arena Wall Configurations
 const float WALL_THICKNESS        = 20.f;  // Width/thickness of boundary walls
 const sf::Color WALL_COLOR        = sf::Color(100, 100, 100); // Dark Gray
+/*
+// Dynamic Object A (Fay) Config
+const float OBJ_A_MASS            = 100.f;
+const float OBJ_A_BOUNCINESS      = 0.5f;
+const float OBJ_A_STATIC_FRIC     = 0.4f;
+const float OBJ_A_DYNAMIC_FRIC    = 0.2f;
+const vec2D OBJ_A_START_POS       = vec2D(300.f, 560.f); 
+const vec2D OBJ_A_START_VEL       = vec2D(300.f, 0.f); // Moving right
+const float OBJ_A_START_ANGLE     = 0.0f;  
+const sf::Color OBJ_A_COLOR       = sf::Color::Green;
 
-
+// Dynamic Object B (Khang) Config
+const float OBJ_B_MASS            = 100.f;
+const float OBJ_B_BOUNCINESS      = 0.5f;
+const float OBJ_B_STATIC_FRIC     = 0.4f;
+const float OBJ_B_DYNAMIC_FRIC    = 0.2f;
+const vec2D OBJ_B_START_POS       = vec2D(500.f, 560.f); 
+const vec2D OBJ_B_START_VEL       = vec2D(-300.f, 0.f); // Moving left
+const float OBJ_B_START_ANGLE     = 0.0f;  
+const sf::Color OBJ_B_COLOR       = sf::Color::Red;
+*/
 
 
 
@@ -98,36 +119,19 @@ int main() {
     sf::RenderWindow window(sf::VideoMode({WINDOW_WIDTH, WINDOW_HEIGHT}), "Physics Engine");
     window.setFramerateLimit(60);
     
+    srand(static_cast<unsigned>(time(0)));
+    
     // Create physical world with configured gravity
     World my_world(GRAVITY); 
     std::vector<Actor> actors;
 
-    const int TOWER_HEIGHT = 8;     // Number of boxes in the stack
-    const float BOX_SIZE = 40.f;    // 40x40 pixel boxes
+    //shape* shapeA = new box(35.f, 35.f); 
+    //shape* shapeB = new box(35.f, 35.f);
+    //shape* shapeA = new circle(20.0f);
+    //shape* shapeB = new circle(20.0f);
 
-    for (int i = 0; i < TOWER_HEIGHT; i++) {
-        // Create a new shape for every actor to prevent double-free memory crashes during cleanup
-        shape* boxShape = new box(BOX_SIZE, BOX_SIZE);
-        
-        // Stack directly in the center, dropping  with 5-pixel gap between each
-        vec2D startPos(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT - 100.f - (i * (BOX_SIZE + 5.f)));
-        
-        // Alternate colors
-        sf::Color color = (i % 2 == 0) ? sf::Color::Red : sf::Color::Blue;
-
-        actors.push_back(createActor(
-            my_world, 
-            100.f,           // Mass
-            startPos,        // Position
-            vec2D(0.f, 0.f), // Start Velocity
-            boxShape,        // Physical Shape
-            color,           // Color
-            0.0f,            // ZERO bounciness so they try to rest immediately
-            0.5f,            // High Static Friction
-            0.3f,            // Standard Dynamic Friction
-            0.0f             // Angle
-        ));
-    }
+    //actors.push_back(createActor(my_world, OBJ_A_MASS, OBJ_A_START_POS, OBJ_A_START_VEL, shapeA, OBJ_A_COLOR, OBJ_A_BOUNCINESS, OBJ_A_STATIC_FRIC, OBJ_A_DYNAMIC_FRIC, OBJ_A_START_ANGLE));
+    //actors.push_back(createActor(my_world, OBJ_B_MASS, OBJ_B_START_POS, OBJ_B_START_VEL, shapeB, OBJ_B_COLOR, OBJ_B_BOUNCINESS, OBJ_B_STATIC_FRIC, OBJ_B_DYNAMIC_FRIC, OBJ_B_START_ANGLE));
 
     // -------------------------------------------------------------
     // DYNAMIC ARENA BOUNDARY WALL GENERATION (Self-correcting size)
@@ -150,10 +154,45 @@ int main() {
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed)
+            if (event.type == sf::Event::Closed){
                 window.close();
         }
+        if (event.type == sf::Event::MouseButtonPressed) {
+                if (event.mouseButton.button == sf::Mouse::Left) {
+                    // 1. Get the exact pixel coordinates of the mouse click
+                    float mouseX = static_cast<float>(event.mouseButton.x);
+                    float mouseY = static_cast<float>(event.mouseButton.y);
 
+                    // 2. Generate random physical properties
+                    bool spawnCircle = (rand() % 2 == 0); // 50/50 chance
+                    sf::Color randomColor(rand() % 256, rand() % 256, rand() % 256);
+                    
+                    shape* randomShape = nullptr;
+                    if (spawnCircle) {
+                        float radius = 15.f + (rand() % 20); // Random radius between 15 and 34
+                        randomShape = new circle(radius);
+                    } else {
+                        float w = 20.f + (rand() % 40); // Random width between 20 and 59
+                        float h = 20.f + (rand() % 40); // Random height between 20 and 59
+                        randomShape = new box(w, h);
+                    }
+
+                    // 3. Inject the new object directly into the physics engine and render pipeline
+                    actors.push_back(createActor(
+                        my_world, 
+                        100.f,                       // Mass
+                        vec2D(mouseX, mouseY),       // Spawn exactly at mouse position
+                        vec2D(0.f, 0.f),             // Start with zero velocity
+                        randomShape, 
+                        randomColor, 
+                        0.3f, 0.5f, 0.3f,            // Bounce, Static Fric, Dynamic Fric
+                        (rand() % 314) / 100.0f      // Random starting rotation angle
+                    ));
+                }
+            
+                }
+            }
+        
         //Advance the mathematical physics step
         my_world.step(TIME_STEP);
         
