@@ -188,8 +188,8 @@ void World::step(float dt) {
 
         if (totalInvMass == 0.0f) continue;
 
-        const float percent = 0.5f; // lift
-        const float slop = 0.2f;   // allowed overlap 
+        const float percent = 0.85f; // lift
+        const float slop = 0.15f;   // allowed overlap 
         
         float penetration = std::max(m.penetration - slop, 0.0f);
         vec2D correction = m.normal * ((penetration * percent) / totalInvMass);

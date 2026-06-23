@@ -22,7 +22,7 @@ const vec2D GRAVITY(0.0f, 200.f);
 const float WALL_THICKNESS        = 20.f;  // Width/thickness of boundary walls
 const sf::Color WALL_COLOR        = sf::Color(100, 100, 100); // Dark Gray
 /*
-// Dynamic Object A (Fay) Config
+// Dynamic Object A Config
 const float OBJ_A_MASS            = 100.f;
 const float OBJ_A_BOUNCINESS      = 0.5f;
 const float OBJ_A_STATIC_FRIC     = 0.4f;
@@ -32,7 +32,7 @@ const vec2D OBJ_A_START_VEL       = vec2D(300.f, 0.f); // Moving right
 const float OBJ_A_START_ANGLE     = 0.0f;  
 const sf::Color OBJ_A_COLOR       = sf::Color::Green;
 
-// Dynamic Object B (Khang) Config
+// Dynamic Object B Config
 const float OBJ_B_MASS            = 100.f;
 const float OBJ_B_BOUNCINESS      = 0.5f;
 const float OBJ_B_STATIC_FRIC     = 0.4f;
