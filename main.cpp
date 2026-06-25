@@ -21,27 +21,27 @@ const vec2D GRAVITY(0.0f, 200.f);
 // Arena Wall Configurations
 const float WALL_THICKNESS        = 20.f;  // Width/thickness of boundary walls
 const sf::Color WALL_COLOR        = sf::Color(100, 100, 100); // Dark Gray
-/*
+
 // Dynamic Object A Config
 const float OBJ_A_MASS            = 100.f;
 const float OBJ_A_BOUNCINESS      = 0.5f;
 const float OBJ_A_STATIC_FRIC     = 0.4f;
 const float OBJ_A_DYNAMIC_FRIC    = 0.2f;
-const vec2D OBJ_A_START_POS       = vec2D(300.f, 560.f); 
-const vec2D OBJ_A_START_VEL       = vec2D(300.f, 0.f); // Moving right
+const vec2D OBJ_A_START_POS       = vec2D(300.f, 380.f); 
+const vec2D OBJ_A_START_VEL       = vec2D(600.f, 0.f); // Moving right
 const float OBJ_A_START_ANGLE     = 0.0f;  
 const sf::Color OBJ_A_COLOR       = sf::Color::Green;
 
 // Dynamic Object B Config
-const float OBJ_B_MASS            = 100.f;
+const float OBJ_B_MASS            = 150.f;
 const float OBJ_B_BOUNCINESS      = 0.5f;
 const float OBJ_B_STATIC_FRIC     = 0.4f;
 const float OBJ_B_DYNAMIC_FRIC    = 0.2f;
-const vec2D OBJ_B_START_POS       = vec2D(500.f, 560.f); 
-const vec2D OBJ_B_START_VEL       = vec2D(-300.f, 0.f); // Moving left
+const vec2D OBJ_B_START_POS       = vec2D(500.f, 360.f); 
+const vec2D OBJ_B_START_VEL       = vec2D(-400.f, 0.f); // Moving left
 const float OBJ_B_START_ANGLE     = 0.0f;  
 const sf::Color OBJ_B_COLOR       = sf::Color::Red;
-*/
+
 
 
 
@@ -125,13 +125,13 @@ int main() {
     World my_world(GRAVITY); 
     std::vector<Actor> actors;
 
-    //shape* shapeA = new box(35.f, 35.f); 
-    //shape* shapeB = new box(35.f, 35.f);
+    shape* shapeA = new box(20.f, 50.f); 
+    shape* shapeB = new box(25.f, 55.f);
     //shape* shapeA = new circle(20.0f);
     //shape* shapeB = new circle(20.0f);
 
-    //actors.push_back(createActor(my_world, OBJ_A_MASS, OBJ_A_START_POS, OBJ_A_START_VEL, shapeA, OBJ_A_COLOR, OBJ_A_BOUNCINESS, OBJ_A_STATIC_FRIC, OBJ_A_DYNAMIC_FRIC, OBJ_A_START_ANGLE));
-    //actors.push_back(createActor(my_world, OBJ_B_MASS, OBJ_B_START_POS, OBJ_B_START_VEL, shapeB, OBJ_B_COLOR, OBJ_B_BOUNCINESS, OBJ_B_STATIC_FRIC, OBJ_B_DYNAMIC_FRIC, OBJ_B_START_ANGLE));
+    actors.push_back(createActor(my_world, OBJ_A_MASS, OBJ_A_START_POS, OBJ_A_START_VEL, shapeA, OBJ_A_COLOR, OBJ_A_BOUNCINESS, OBJ_A_STATIC_FRIC, OBJ_A_DYNAMIC_FRIC, OBJ_A_START_ANGLE));
+    actors.push_back(createActor(my_world, OBJ_B_MASS, OBJ_B_START_POS, OBJ_B_START_VEL, shapeB, OBJ_B_COLOR, OBJ_B_BOUNCINESS, OBJ_B_STATIC_FRIC, OBJ_B_DYNAMIC_FRIC, OBJ_B_START_ANGLE));
 
     // -------------------------------------------------------------
     // DYNAMIC ARENA BOUNDARY WALL GENERATION (Self-correcting size)

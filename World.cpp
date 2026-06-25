@@ -2,6 +2,7 @@
 #include "collision.h"
 #include <algorithm>
 #include <vector>
+#include <cmath> // REQUIRED for std::abs, std::sqrt
 
 World::World(vec2D gravity) {
     this->gravity = gravity;
@@ -24,22 +25,26 @@ struct CollisionData {
     RigidBody* bodyA;
     RigidBody* bodyB;
     manifold m;
+    float bounce[2]; // Stores pre-calculated restitution for up to 2 contact points
 };
 
 void World::step(float dt) {
     debugLines.clear();
+    
     // STAGE I: INTEGRATION
     for(RigidBody* body: bodies) {
         body->applyForce(vec2D(gravity.x * body->getMass(), gravity.y * body->getMass()));
-        //Directional vectors for testing
-        //drawLine(body->position, body->position + (body->acceleration * 0.2f), sf::Color(255, 165, 0));
+        
+        // Directional vectors for testing (Acceleration/Forces - Orange)
+        // drawLine(body->position, body->position + (body->acceleration * 0.2f), sf::Color(255, 165, 0));
+        
         body->update(dt);
         
-        ///Directional vectors for testing
-        //drawLine(body->position, body->position + (body->velocity * 0.3f), sf::Color::Green);
+        // Directional vectors for testing (Velocity - Green)
+        // drawLine(body->position, body->position + (body->velocity * 0.3f), sf::Color::Green);
     }
 
-    // STAGE II:MANIFOLD GENERATION
+    // STAGE II: MANIFOLD GENERATION
     std::vector<CollisionData> activeCollisions;
     
     for (size_t i = 0; i < bodies.size(); i++) {
@@ -47,7 +52,6 @@ void World::step(float dt) {
             RigidBody* bodyA = bodies[i];
             RigidBody* bodyB = bodies[j];
 
-            // If both objects have infinite mass, they cannot affect each other.
             if (bodyA->getInvMass() == 0.0f && bodyB->getInvMass() == 0.0f) {
                 continue; 
             }
@@ -56,13 +60,17 @@ void World::step(float dt) {
                 manifold m = generateManifold(*(bodyA->m_shape), *(bodyB->m_shape), bodyA->position, bodyB->position, bodyA->angle, bodyB->angle);
                 
                 if (m.isColliding && m.contactCount > 0) {
-                    activeCollisions.push_back({bodyA, bodyB, m});
+                    CollisionData col;
+                    col.bodyA = bodyA;
+                    col.bodyB = bodyB;
+                    col.m = m;
+                    activeCollisions.push_back(col);
                 }
             }
         }
     }
 
-    //Directional vectors for testing
+    // Directional vectors for testing (Contact points and Normals)
     /*
     for (auto& col : activeCollisions) {
         manifold& m = col.m; 
@@ -78,8 +86,38 @@ void World::step(float dt) {
         }
     }
     */
+
+    // Initialize accumulators and calculate restitution bias
+    for (auto& col : activeCollisions) {
+        RigidBody* bodyA = col.bodyA;
+        RigidBody* bodyB = col.bodyB;
+        manifold& m = col.m;
+        
+        for (int k = 0; k < m.contactCount; k++) {
+            // 1. Zero out uninitialized memory for intra-frame accumulators
+            m.normalImpulse[k] = 0.0f;
+            m.tangentImpulse[k] = 0.0f;
+
+            // 2. Pre-calculate restitution bias using the INITIAL impact velocity
+            vec2D rA = m.contactPoints[k] - bodyA->position;
+            vec2D rB = m.contactPoints[k] - bodyB->position;
+            vec2D vA_contact = bodyA->velocity + vec2D(-bodyA->angularVelocity * rA.y, bodyA->angularVelocity * rA.x);
+            vec2D vB_contact = bodyB->velocity + vec2D(-bodyB->angularVelocity * rB.y, bodyB->angularVelocity * rB.x);
+            
+            float initialVelocityAlongNormal = (vB_contact - vA_contact).dot(m.normal);
+            
+            float restitution = std::min(bodyA->restitution, bodyB->restitution);
+            if (std::abs(initialVelocityAlongNormal) < 25.0f) {
+                restitution = 0.0f; // Slop threshold to stop micro-bouncing on resting objects
+            }
+            
+            // Store the bounce target velocity
+            col.bounce[k] = restitution * initialVelocityAlongNormal;
+        }
+    }
+
     // STAGE III: THE ITERATIVE SOLVER
-    const int ITERATIONS = 30; // Number of passes to stabilize the constraints
+    const int ITERATIONS = 30;
 
     for (int it = 0; it < ITERATIONS; it++) {
         for (auto& col : activeCollisions) {
@@ -94,12 +132,11 @@ void World::step(float dt) {
 
             if (invMassA + invMassB == 0.0f) continue;
 
-            // Solve each contact point sequentially
             for (int k = 0; k < m.contactCount; k++) {
                 vec2D rA = m.contactPoints[k] - bodyA->position;
                 vec2D rB = m.contactPoints[k] - bodyB->position;
 
-                //NORMAL IMPULSE (Bounce & Penetration)
+                // NORMAL IMPULSE
                 vec2D vA_contact = bodyA->velocity + vec2D(-bodyA->angularVelocity * rA.y, bodyA->angularVelocity * rA.x);
                 vec2D vB_contact = bodyB->velocity + vec2D(-bodyB->angularVelocity * rB.y, bodyB->angularVelocity * rB.x);
                 vec2D relativeVelocity = vB_contact - vA_contact;
@@ -113,28 +150,20 @@ void World::step(float dt) {
                     (rA_cross_N * rA_cross_N * invInertiaA) + 
                     (rB_cross_N * rB_cross_N * invInertiaB);
 
-                float restitution = std::min(bodyA->restitution, bodyB->restitution);
-                if (std::abs(velocityAlongNormal) < 25.0f) restitution = 0.0f; 
-
-                // Calculate the raw iteration impulse
-                float j = -(1.0f + restitution) * velocityAlongNormal / invMassSum;
+                // Use the pre-calculated bounce bias instead of checking restitution dynamically
+                float j = -(velocityAlongNormal + col.bounce[k]) / invMassSum;
 
                 float oldNormalImpulse = m.normalImpulse[k];
-                // Clamp the total accumulated impulse to >= 0 (Objects can push apart, never pull together)
                 m.normalImpulse[k] = std::max(oldNormalImpulse + j, 0.0f);
-                
-                // Only apply the difference between the clamped total and the old total
                 float delta_j = m.normalImpulse[k] - oldNormalImpulse;
                 vec2D normalPush = m.normal * delta_j;
 
-                //Normal Delta
                 bodyA->velocity = bodyA->velocity - (normalPush * invMassA);
                 bodyA->angularVelocity -= cross2D(rA, normalPush) * invInertiaA;
                 bodyB->velocity = bodyB->velocity + (normalPush * invMassB);
                 bodyB->angularVelocity += cross2D(rB, normalPush) * invInertiaB;
 
                 // TANGENTIAL IMPULSE (Friction)
-                // Recalculate velocity after normal impulse alters it
                 vA_contact = bodyA->velocity + vec2D(-bodyA->angularVelocity * rA.y, bodyA->angularVelocity * rA.x);
                 vB_contact = bodyB->velocity + vec2D(-bodyB->angularVelocity * rB.y, bodyB->angularVelocity * rB.x);
                 relativeVelocity = vB_contact - vA_contact;
@@ -152,7 +181,6 @@ void World::step(float dt) {
                         (rA_cross_T * rA_cross_T * invInertiaA) + 
                         (rB_cross_T * rB_cross_T * invInertiaB);
 
-                    //raw friction impulse
                     float jt = -velocityAlongTangent / invMassSumTangent;
                     
                     float mu = std::sqrt(bodyA->dynamicFriction * bodyA->dynamicFriction + bodyB->dynamicFriction * bodyB->dynamicFriction);
@@ -160,13 +188,13 @@ void World::step(float dt) {
                     float maxFriction = (m.normalImpulse[k] + baselineGravityImpulse) * mu;
 
                     float oldTangentImpulse = m.tangentImpulse[k];
-                    // Clamp friction
-                    m.tangentImpulse[k] = std::clamp(oldTangentImpulse + jt, -maxFriction, maxFriction);
+                    
+                    // Fixed clamp to compile correctly across all standards
+                    m.tangentImpulse[k] = std::max(-maxFriction, std::min(oldTangentImpulse + jt, maxFriction));
                     
                     float delta_jt = m.tangentImpulse[k] - oldTangentImpulse;
                     vec2D frictionPush = tangent * delta_jt;
 
-                    // Apply Tangential Delta
                     bodyA->velocity = bodyA->velocity - (frictionPush * invMassA);
                     bodyA->angularVelocity -= cross2D(rA, frictionPush) * invInertiaA;
                     bodyB->velocity = bodyB->velocity + (frictionPush * invMassB);
@@ -176,7 +204,7 @@ void World::step(float dt) {
         }
     }
 
-    // STAGE IV: POSITIONAL CORRECTION (Run ONCE at the end)
+    // STAGE IV: POSITIONAL CORRECTION
     for (auto& col : activeCollisions) {
         RigidBody* bodyA = col.bodyA;
         RigidBody* bodyB = col.bodyB;
@@ -188,13 +216,12 @@ void World::step(float dt) {
 
         if (totalInvMass == 0.0f) continue;
 
-        const float percent = 0.85f; // lift
-        const float slop = 0.15f;   // allowed overlap 
+        const float percent = 0.85f; 
+        const float slop = 0.15f;   
         
         float penetration = std::max(m.penetration - slop, 0.0f);
         vec2D correction = m.normal * ((penetration * percent) / totalInvMass);
 
-        // Push objects out linearly; the iterations of velocity rotation solved the hovering!
         bodyA->position = bodyA->position - (correction * invMassA);
         bodyB->position = bodyB->position + (correction * invMassB);
     }
