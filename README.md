@@ -21,7 +21,7 @@ This project was created for educational purposes, and is greatly inspired by th
 
 * **Collision Detection:** Separating Axis Theorem (SAT) is used for overlap detection for oriented bounding boxes and circles.
 * **Sutherland-Hodgman Clipping:** To generate accurate multi-point contact manifolds and independent penetration depths.
-* **Sequential Impulses:** Solves complex multi-body interactions iteratively. This approach may hinder a more accurate and precise simulation of system with multiple objects and/or sensitive to changes. 
+* **Sequential Impulses:** Solves complex multi-body interactions iteratively. This approach may hinder a more accurate and precise simulation of system with multiple objects and/or sensitive to changes. <br>
 *Note: The engine uses a "cold-starting" approach (intra-frame accumulators rather than cross-frame caching). Because of this, simulating massive multi-object systems may require higher iteration counts to maintain precision and stack stability.*
 * **Friction & Damping:** Calculates dynamic and static friction as a 2D cross-product, accurately accounting for torque and normal force constraints. It also includes basic velocity damping to simulate air resistance and prevent continuous floating-point drift.
 * **Custom parameters:** These includes overlapping and reactionary force percentage that can be adjusted to the liking of the users. They will help the user to tweak the engine in case the logic itself has some minor flaws.
