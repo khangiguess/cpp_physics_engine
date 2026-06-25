@@ -31,7 +31,7 @@ This project was created for educational purposes, and is greatly inspired by th
 
 
 ## Dependencies
-* C++17 or higher
+* C++11 or higher
 * [SFML](https://www.sfml-dev.org/)
 
 ## Building and Running
