@@ -1,5 +1,7 @@
 # 2D Rigid Body Physics Engine
 
+![demo](demo.png)
+
 ## A simple 2D rigid body physics engine written entirely in C++ capable of simulating interactions between objects.
 
 This project was created for educational purposes, and is greatly inspired by the YouTube series by Two-Bit Coding for a physics engine in C. Therefore, there are similar concepts and logic that I adapted in order to complete this project.
